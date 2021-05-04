@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Cowin.VaccineTrackers": {
+      "commandName": "Project",
+      "commandLineArgs": "CheckVaccineSlots bydistrict -s karnataka -d bbmp -a 18 -w 6"
+    }
+  }
+}
