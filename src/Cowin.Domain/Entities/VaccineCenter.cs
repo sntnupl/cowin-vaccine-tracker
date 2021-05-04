@@ -17,9 +17,35 @@ namespace Cowin.Domain.Entities
 
         public List<VaccineCenter> WithMatchingAgeLimit(int age, bool ignoreIfUnavailable)
         {
-            if (IsEmpty()) return new List<VaccineCenter>();
+            var result = new List<VaccineCenter>(); 
+            if (IsEmpty()) return result;
 
-            return Centers.Where(c => c.MatchesAgeLimit(age, ignoreIfUnavailable)).ToList();
+            var centers = Centers.Where(c => c.MatchesAgeLimit(age, ignoreIfUnavailable)).ToList();
+            if (null == centers || centers.Count < 1) return result;
+
+            foreach(var center in centers) {
+                result.Add(VaccineCenterWithSessionsInAgeLimit(center, age));
+            }
+
+            return result;
+        }
+
+        public static VaccineCenter VaccineCenterWithSessionsInAgeLimit(VaccineCenter vc, int age)
+        {
+            return new VaccineCenter { 
+                CenterId = vc.CenterId,
+                Name = vc.Name,
+                State = vc.State,
+                District = vc.District,
+                Block = vc.Block,
+                PinCode = vc.PinCode,
+                Lat = vc.Lat,
+                Long = vc.Long,
+                StartTime = vc.StartTime,
+                EndTime = vc.EndTime,
+                BillType = vc.BillType,
+                Sessions = vc.Sessions.Where(s => s.MinAgeLimit <= age && s.AvailableCapacity > 0).ToList(),
+            };
         }
     }
 

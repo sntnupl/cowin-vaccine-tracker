@@ -24,9 +24,6 @@ namespace Cowin.VaccineTrackers
                     config.AddUserSecrets<Program>(true);
                 })
                 .ConfigureLogging((context, logging) => {
-                    //logging.SetMinimumLevel(LogLevel.Debug);
-                    //Log.Logger = FileLoggerConfig()
-                    //            .CreateLogger();
                     logging.AddSerilog(FileLoggerConfig().CreateLogger());
                 })
                 .ConfigureServices((context, services) => {
@@ -41,10 +38,6 @@ namespace Cowin.VaccineTrackers
 
                     services.AddSingleton<ICowinHttpClient, CowinHttpClient>();
                     services.AddSingleton<INotificationService, ConsoleNotification>();
-
-                    //services.AddSingleton<ICowinHttpClient>(provider => {
-                    //    return CowinHttpClientFactory.Create("https://cdn-api.co-vin.in/api/v2/");
-                    //});
                 })
                 .RunConsoleAppFrameworkAsync(args);
         }

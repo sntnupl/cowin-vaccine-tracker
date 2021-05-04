@@ -85,6 +85,42 @@ namespace Cowin.VaccineTrackers.Commanders
                     _logger.LogError(ex, "Error found while checking for vaccine.");
                 }
             }
+            else {
+                int iteration = 0;
+                try {
+                    while (!this.Context.CancellationToken.IsCancellationRequested) {
+                        try {
+                            Console.Clear();
+                            Console.WriteLine($"iteration {++iteration}..");
+                            foreach (var weekStart in nextWeeks) {
+                                List<VaccineCenter> vaccineCenters = await _cowinHttpClient
+                                    .FindMatchingVaccineCenterByPinCode(
+                                        pin,
+                                        weekStart,
+                                        age,
+                                        true);
+                                    if (null == vaccineCenters || vaccineCenters.Count < 1) {
+                                        _logger.LogDebug($"No vaccine center found in Pin {pin} for week starting on {weekStart} for age >= {age}.");
+                                        continue;
+                                    }
+
+                                await _notificationService.NotifyUser(vaccineCenters, weekStart, age);
+                                await Task.Delay(TimeSpan.FromSeconds(10));
+                            }
+                        }
+                        catch (Exception ex) {
+                            _logger.LogError(ex, "Error found while checking for vaccine.");
+                        }
+
+                        // wait for next time
+                        await Task.Delay(TimeSpan.FromMinutes(1), this.Context.CancellationToken);
+                    }
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException)) {
+                    _logger.LogError(ex, $"Error encountered during Continuous tracking by pin {pin}");
+                }
+                finally { }
+            }
         }
 
 
@@ -189,6 +225,7 @@ namespace Cowin.VaccineTrackers.Commanders
                                     continue;
                                 }
                                 await _notificationService.NotifyUser(vaccineCenters, weekStart, age);
+                                await Task.Delay(TimeSpan.FromSeconds(10));
                             }
                         }
                         catch (Exception ex) {
