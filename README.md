@@ -16,7 +16,7 @@ Please install dotnet core version 3.1 as this is the LTS version.
 1. `dotnet build`
 1. `dotnet run -- --help` to view the commands available.
 
-To create [self-contained exe files], run these commands:
+To create [self-contained exe files], run these commands (from `./src/VaccineTrackers`):
 1. Windows 64-bit compatible: `dotnet publish -r win-x64 -p:PublishSingleFile=true --self-contained true`  
 1. Linux 64-bit compatible: `dotnet publish -r linux-x64 -p:PublishSingleFile=true --self-contained true`  
 
