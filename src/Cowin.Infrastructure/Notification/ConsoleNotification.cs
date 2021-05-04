@@ -17,12 +17,13 @@ namespace Cowin.Infrastructure.Notification
             this.logger = logger;
         }
 
-        public Task NotifyUser(List<VaccineCenter> vaccineCenters, string week)
+        public Task NotifyUser(List<VaccineCenter> vaccineCenters, string week, int age)
         {
             if (null == vaccineCenters || vaccineCenters.Count < 1) return Task.CompletedTask;
 
             //Console.Clear();
-            Console.WriteLine($"Found {vaccineCenters.Count} vaccine centers for week starting {week}:");
+            Console.WriteLine($"\nFound {vaccineCenters.Count} vaccine centers for ages {age}+ during the week starting on {week}:");
+            Console.WriteLine("=================================================================================================");
             foreach (var vc in vaccineCenters) {
                 Console.WriteLine(CompactNotification(vc));
             }
@@ -44,11 +45,13 @@ namespace Cowin.Infrastructure.Notification
 
         private string CompactNotification(VaccineCenter vc)
         {
-            var sb = new StringBuilder("---------------------------------------\n");
-            sb.AppendLine($"{vc.Name} | {vc.PinCode} | {vc.StartTime} - {vc.EndTime} | {vc.BillType}");
+            var sb = new StringBuilder();
+            double totalAvailable = 0;
             foreach(var session in vc.Sessions) {
-                sb.AppendLine($"  - {session.AvailableCapacity} available on {session.Date}, age limit {session.MinAgeLimit} for {session.VaccineName} vaccine ");
+                //sb.AppendLine($"  - {session.AvailableCapacity} available on {session.Date}, age limit {session.MinAgeLimit} for {session.VaccineName} vaccine ");
+                totalAvailable += session.AvailableCapacity;
             }
+            sb.Append($"- {vc.Name} | {vc.PinCode} | {vc.StartTime} - {vc.EndTime} | {vc.BillType} | {totalAvailable} slots available");
             return sb.ToString();
         }
     }

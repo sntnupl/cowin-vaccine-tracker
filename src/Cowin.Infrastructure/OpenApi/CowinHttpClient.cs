@@ -16,6 +16,7 @@ namespace Cowin.Infrastructure.OpenApi
         private const string pathAllStates = "admin/location/states";
         private const string pathDistrictsInState = "admin/location/districts";
         private const string pathCalendarByDistrict = "appointment/sessions/public/calendarByDistrict";
+        private const string pathCalendarByPin = "appointment/sessions/public/calendarByPin";
 
         public CowinHttpClient(
             HttpClient httpClient,
@@ -105,6 +106,42 @@ namespace Cowin.Infrastructure.OpenApi
                     });
 
                     if (vaccineCenters.IsEmpty()) return result;
+
+                    List<VaccineCenter> matchingCenters = vaccineCenters.WithMatchingAgeLimit(age, ignoreIfUnavailable);
+                    return matchingCenters;
+                }
+            }
+            catch (Exception ex) {
+                logger.LogError(ex, "Error fetching vaccination centers.");
+                return null;
+            }
+        }
+
+        public async Task<List<VaccineCenter>> FindMatchingVaccineCenterByPinCode(
+            int pin, 
+            string weekStart, 
+            int age, 
+            bool ignoreIfUnavailable)
+        {
+            var result = new List<VaccineCenter>();
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{pathCalendarByPin}?pincode={pin}&date={weekStart}");
+            request.Headers.Add("Accept", "application/json");
+
+            try {
+                using (var response = await httpClient.SendAsync(request)) {
+                    if (!response.IsSuccessStatusCode) {
+                        logger.LogError($"Error fetching vaccination centers for Pin {pin} and date {weekStart}. Http Response Code: {response.StatusCode}");
+                        return result;
+                    }
+
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var vaccineCenters = JsonSerializer.Deserialize<VaccineCalendarByDistrictResponse>(responseJson, new JsonSerializerOptions {
+                        AllowTrailingCommas = true,
+                        IgnoreNullValues = true,
+                    });
+
+                    if (vaccineCenters.IsEmpty())
+                        return result;
 
                     List<VaccineCenter> matchingCenters = vaccineCenters.WithMatchingAgeLimit(age, ignoreIfUnavailable);
                     return matchingCenters;

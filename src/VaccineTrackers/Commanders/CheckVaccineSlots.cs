@@ -1,9 +1,11 @@
 ﻿using ConsoleAppFramework;
 using Cowin.Domain.Abstractions;
+using Cowin.Domain.Entities;
 using Cowin.Infrastructure.Dates;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -29,8 +31,65 @@ namespace Cowin.VaccineTrackers.Commanders
         }
 
 
+        // dotnet run -- CheckVaccineSlots byPin -p 560001 -a 18 --date 03-05-2021 -w 8 -c
+        [Command("byPin", "Track Vaccine availability by District")]
+        public async Task CheckByPin(
+            [Option("p", "PIN Code")] int pin,
+            [Option("a", "Minimum Age limit (18, 45 or 60)")] int age,
+            [Option("Starting date from which to track in dd-mm-yyyy format. Example: 03-11-2021. If skipped will start from current week.")] string date = null,
+            [Option("w", "Number of future weeks to check for availability")] int futureWeeks = 4,
+            [Option("c", "If true, will continuously check for vaccine availability.")] bool continuous = false) 
+        {
+            if (pin < 100000 || pin > 999999) {
+                _logger.LogError($"Invalid PinCode {pin}");
+                return;
+            }
 
-        // dotnet run -- CheckVaccineSlots bydistrict -s karnataka -d bbmp -a 18 --date 03-05-2021 -w 8
+            if (age < 18 || age > 200) {
+                _logger.LogError($"Invalid Age {age}");
+                return;
+            }
+            if (futureWeeks < 1 || futureWeeks > 53) {
+                _logger.LogError("Invalid number of weeks to check for availability.");
+                return;
+            }
+
+            var nextWeeks = DateHelpers.GetStartDatesForUpcomingWeeks(date, futureWeeks);
+            if (null == nextWeeks || nextWeeks.Count < 1) {
+                _logger.LogError($"Invalid date {date}");
+                return;
+            }
+
+            if (!continuous) {
+                try {
+                    Console.Clear();
+                    foreach (var weekStart in nextWeeks) {
+                        List<VaccineCenter> vaccineCenters = await _cowinHttpClient
+                            .FindMatchingVaccineCenterByPinCode(
+                                pin,
+                                weekStart,
+                                age,
+                                true);
+                        if (null == vaccineCenters || vaccineCenters.Count < 1) {
+                            _logger.LogDebug($"No vaccine center found in Pin {pin} for week starting on {weekStart} for age >= {age}.");
+                            continue;
+                        }
+
+                        await _notificationService.NotifyUser(vaccineCenters, weekStart, age);
+                        await Task.Delay(TimeSpan.FromSeconds(10));
+                    }
+                    Console.WriteLine("..Done");
+                    //Console.ReadLine();
+                }
+                catch (Exception ex) {
+                    _logger.LogError(ex, "Error found while checking for vaccine.");
+                }
+            }
+        }
+
+
+
+        // dotnet run -- CheckVaccineSlots bydistrict -s karnataka -d bbmp -a 18 --date 03-05-2021 -w 8 -c
         [Command("byDistrict", "Track Vaccine availability by District")]
         public async Task Start(
             [Option("s", "State name")] string state,
@@ -80,8 +139,8 @@ namespace Cowin.VaccineTrackers.Commanders
             }
 
 
-            var next12Weeks = DateHelpers.GetStartDatesForUpcomingWeeks(date, futureWeeks);
-            if (null == next12Weeks || next12Weeks.Count < 1) {
+            var nextWeeks = DateHelpers.GetStartDatesForUpcomingWeeks(date, futureWeeks);
+            if (null == nextWeeks || nextWeeks.Count < 1) {
                 _logger.LogError($"Invalid date {date}");
                 return;
             }
@@ -89,7 +148,7 @@ namespace Cowin.VaccineTrackers.Commanders
             if (!continuous) {
                 try {
                     Console.Clear();
-                    foreach (var weekStart in next12Weeks) {
+                    foreach (var weekStart in nextWeeks) {
                         var vaccineCenters = await _cowinHttpClient
                             .FindMatchingVaccineCenter(
                                 matchingDistrict.Id,
@@ -101,7 +160,7 @@ namespace Cowin.VaccineTrackers.Commanders
                             continue;
                         }
 
-                        await _notificationService.NotifyUser(vaccineCenters, weekStart);
+                        await _notificationService.NotifyUser(vaccineCenters, weekStart, age);
                         await Task.Delay(TimeSpan.FromSeconds(10));
                     }
                     Console.WriteLine("..Done");
@@ -118,7 +177,7 @@ namespace Cowin.VaccineTrackers.Commanders
                         try {
                             Console.Clear();
                             Console.WriteLine($"iteration {++iteration}..");
-                            foreach (var weekStart in next12Weeks) {
+                            foreach (var weekStart in nextWeeks) {
                                 var vaccineCenters = await _cowinHttpClient
                                     .FindMatchingVaccineCenter(
                                         matchingDistrict.Id,
@@ -129,7 +188,7 @@ namespace Cowin.VaccineTrackers.Commanders
                                     _logger.LogDebug($"No vaccine center found in district {district} for week starting on {weekStart} for age >= {age}.");
                                     continue;
                                 }
-                                await _notificationService.NotifyUser(vaccineCenters, weekStart);
+                                await _notificationService.NotifyUser(vaccineCenters, weekStart, age);
                             }
                         }
                         catch (Exception ex) {

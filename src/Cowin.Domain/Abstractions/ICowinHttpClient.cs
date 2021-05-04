@@ -11,5 +11,6 @@ namespace Cowin.Domain.Abstractions
         Task<DistrictsInState> GetAllDistrictsInState(State matchingState);
         
         Task<List<VaccineCenter>> FindMatchingVaccineCenter(int district, string weekStart, int age, bool ignoreIfUnavailable);
+        Task<List<VaccineCenter>> FindMatchingVaccineCenterByPinCode(int pin, string weekStart, int age, bool v);
     }
 }
