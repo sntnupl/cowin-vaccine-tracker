@@ -25,13 +25,13 @@ namespace Cowin.Infrastructure.Dates
             return true;
         }
 
-        public static List<string> GetStartDatesForUpcomingWeeks(string start, int countNextWeeks)
+        public static List<string> GetStartDatesForUpcomingWeeks(string start, int countNextWeeks, bool startWeekFromMonday)
         {
             if (!string.IsNullOrEmpty(start) && !ValidDateForApis(start)) return null;
             if (string.IsNullOrEmpty(start)) start = DateTime.Now.ToString("dd-MM-yyyy");
 
             var startDate = DateTime.ParseExact(start, "dd-MM-yyyy", CultureInfo.InvariantCulture);
-            var week1Start = startDate.GetMonday();
+            var week1Start = startWeekFromMonday ? startDate.GetMonday() : startDate;
 
             var result = new List<string>();
             result.Add(week1Start.ToString("dd-MM-yyyy"));

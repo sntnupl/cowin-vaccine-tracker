@@ -54,7 +54,7 @@ namespace Cowin.VaccineTrackers.Commanders
                 return;
             }
 
-            var nextWeeks = DateHelpers.GetStartDatesForUpcomingWeeks(date, futureWeeks);
+            var nextWeeks = DateHelpers.GetStartDatesForUpcomingWeeks(date, futureWeeks, false);
             if (null == nextWeeks || nextWeeks.Count < 1) {
                 _logger.LogError($"Invalid date {date}");
                 return;
@@ -175,7 +175,7 @@ namespace Cowin.VaccineTrackers.Commanders
             }
 
 
-            var nextWeeks = DateHelpers.GetStartDatesForUpcomingWeeks(date, futureWeeks);
+            var nextWeeks = DateHelpers.GetStartDatesForUpcomingWeeks(date, futureWeeks, false);
             if (null == nextWeeks || nextWeeks.Count < 1) {
                 _logger.LogError($"Invalid date {date}");
                 return;
